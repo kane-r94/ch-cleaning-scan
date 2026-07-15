@@ -216,11 +216,18 @@ numbers, from the Actions tab.
     doesn't accidentally try to process every matched company in one go and
     time out — raise it once you're happy with a small test run.
   - turnover-scan `mode: bulk` — uses Companies House's free monthly
-    accounts archive (no extra API calls beyond discovery). Faster for a
-    full sweep, but you need to give it a real `bulk_month` (e.g. `2026-06`)
-    — check https://download.companieshouse.gov.uk/en_accountsdata.html
-    first to confirm that month's file is published and that the filename
-    pattern still matches what's in `src/bulk_scan.py`.
+    accounts archive (no extra API calls beyond discovery), and for a full
+    sector sweep at scale this is the one to use: `bulk_month` is treated as
+    an **anchor** month, and the workflow loops back over the **trailing 12
+    months** ending there, `--append`-ing each one into `results.csv`. This
+    matters because each monthly archive only contains accounts *filed*
+    that month — since a company files once a year on its own schedule, a
+    single month alone would only cover ~1/12 of your discovered companies.
+    Leave `bulk_month` blank to anchor on today's month, or check
+    https://download.companieshouse.gov.uk/en_accountsdata.html to confirm
+    the filename pattern still matches `src/bulk_scan.py` if a month in the
+    loop fails (the workflow logs a warning and skips that month rather
+    than failing the whole run).
 - When it finishes, it commits `docs/results.json`, and the dashboard
   updates automatically — refresh the Pages URL.
 
@@ -233,7 +240,10 @@ numbers, from the Actions tab.
 - The Action has `timeout-minutes: 300` (5 hours) as a hard ceiling — a
   full-sector `api` mode sweep of thousands of companies could still hit
   that; use the `api_company_limit` input or switch to `bulk` mode for
-  large sweeps.
+  large sweeps. Bulk mode's trailing-12-months loop downloads 12 monthly
+  archives in one run, which also takes real time (each archive can be a
+  few hundred MB) — if this becomes a problem, split it across several
+  workflow runs using different `bulk_month` anchors instead.
 - If a run fails, check the Actions tab logs first — most likely causes are
   a missing/incorrect secret, a wrong bulk month/snapshot date/URL, or (if
   `discovery_mode` was set to `api` for a broad sector) the Advanced Search
