@@ -107,8 +107,11 @@ def main() -> None:
     parser.add_argument("--min-turnover", type=float, default=10_000_000)
     parser.add_argument("--max-turnover", type=float, default=30_000_000)
     parser.add_argument("--append", action="store_true",
-                         help="append to an existing results.csv instead of overwriting "
-                              "(use this when scanning multiple months in turn)")
+                         help="merge into an existing results.csv instead of overwriting "
+                              "(use this when scanning multiple months in turn) — matches "
+                              "are deduped by company_number, keeping whichever filing has "
+                              "the later period end, so a company whose two consecutive "
+                              "years both land inside the scanned window only appears once")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -132,18 +135,20 @@ def main() -> None:
         zip_bytes = download_zip(url)
 
     os.makedirs(os.path.dirname(args.outfile) or ".", exist_ok=True)
-    mode = "a" if args.append and os.path.exists(args.outfile) else "w"
-    write_header = mode == "w"
 
-    matched = 0
+    # Accumulate keyed by company_number so a company with two consecutive
+    # years' filings both landing inside the scanned window (e.g. a 12-month
+    # lookback catching last year's and this year's accounts) collapses to
+    # one row — whichever has the later period end — instead of a duplicate.
+    best_by_company: dict[str, dict] = {}
+    if args.append and os.path.exists(args.outfile):
+        with open(args.outfile, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                best_by_company[row["company_number"]] = row
+
+    new_or_updated = 0
     scanned = 0
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf, \
-            open(args.outfile, mode, newline="", encoding="utf-8") as out_f:
-
-        writer = csv.DictWriter(out_f, fieldnames=OUTPUT_FIELDS)
-        if write_header:
-            writer.writeheader()
-
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         names = zf.namelist()
         for name in tqdm(names, desc="Scanning filed accounts"):
             m = COMPANY_NUMBER_RE.match(os.path.basename(name))
@@ -171,13 +176,15 @@ def main() -> None:
             if not (args.min_turnover <= turnover_f <= args.max_turnover):
                 continue
 
-            writer.writerow({
+            company_number = row.get("company_number", number)
+            period_end = parsed.get("period_end") or ""
+            candidate = {
                 "company_name": row.get("company_name", ""),
                 "entity_type": row.get("company_type", ""),
-                "company_number": row.get("company_number", number),
+                "company_number": company_number,
                 "hq_address": row.get("address_snippet", ""),
                 "latest_turnover": f"{turnover_f:,.0f}",
-                "turnover_year": parsed.get("period_end", ""),
+                "turnover_year": period_end,
                 "employees": (f"{float(parsed['employees']):,.0f}"
                               if parsed.get("employees") is not None else ""),
                 "ownership_type": "Not looked up in bulk mode — cross-reference via "
@@ -185,11 +192,22 @@ def main() -> None:
                 "sic_codes": row.get("sic_codes", ""),
                 "confidence": "Audited",
                 "source": f"Companies House Accounts Data Product, file {name}",
-            })
-            matched += 1
+            }
+
+            prior = best_by_company.get(company_number)
+            if prior is None or period_end > (prior.get("turnover_year") or ""):
+                best_by_company[company_number] = candidate
+                new_or_updated += 1
+
+    with open(args.outfile, "w", newline="", encoding="utf-8") as out_f:
+        writer = csv.DictWriter(out_f, fieldnames=OUTPUT_FIELDS)
+        writer.writeheader()
+        for candidate in best_by_company.values():
+            writer.writerow(candidate)
 
     print(f"Scanned {scanned} filings for companies of interest; "
-          f"{matched} matched the turnover band. Written to {args.outfile}")
+          f"{new_or_updated} new/updated matches this run. "
+          f"{len(best_by_company)} distinct companies now in {args.outfile}")
 
 
 if __name__ == "__main__":
