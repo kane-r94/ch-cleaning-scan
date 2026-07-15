@@ -234,11 +234,13 @@ numbers, from the Actions tab.
   - turnover-scan `mode: bulk` — uses Companies House's free monthly
     accounts archive (no extra API calls beyond discovery), and for a full
     sector sweep at scale this is the one to use: `bulk_month` is treated as
-    an **anchor** month, and the workflow loops back over the **trailing 12
+    an **anchor** month, and the workflow loops back over the **trailing 18
     months** ending there, `--append`-ing each one into `results.csv`. This
     matters because each monthly archive only contains accounts *filed*
     that month — since a company files once a year on its own schedule, a
-    single month alone would only cover ~1/12 of your discovered companies.
+    single month alone would only cover ~1/12 of your discovered companies;
+    the extra 6 months beyond a full year gives headroom for late filers and
+    companies whose accounting reference date has shifted.
     Leave `bulk_month` blank to anchor on today's month, or check
     https://download.companieshouse.gov.uk/en_accountsdata.html to confirm
     the filename pattern still matches `src/bulk_scan.py` if a month in the
@@ -256,10 +258,10 @@ numbers, from the Actions tab.
 - The Action has `timeout-minutes: 300` (5 hours) as a hard ceiling — a
   full-sector `api` mode sweep of thousands of companies could still hit
   that; use the `api_company_limit` input or switch to `bulk` mode for
-  large sweeps. Bulk mode's trailing-12-months loop downloads 12 monthly
-  archives in one run, which also takes real time (each archive can be a
-  few hundred MB) — if this becomes a problem, split it across several
-  workflow runs using different `bulk_month` anchors instead.
+  large sweeps. Bulk mode's trailing-18-months loop downloads 18 monthly
+  archives in one run (each is 1-4GB), which also takes real time — if this
+  becomes a problem, split it across several workflow runs using different
+  `bulk_month` anchors instead.
 - If a run fails, check the Actions tab logs first — most likely causes are
   a missing/incorrect secret, a wrong bulk month/snapshot date/URL, or (if
   `discovery_mode` was set to `api` for a broad sector) the Advanced Search

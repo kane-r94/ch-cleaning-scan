@@ -40,7 +40,7 @@ on:
         default: "500"
         required: false
       bulk_month:
-        description: "Anchor YYYY-MM for bulk turnover-scan mode — the trailing 12 months up to and including this one are scanned (blank = today's month). Check download.companieshouse.gov.uk/en_accountsdata.html for the current filename pattern first."
+        description: "Anchor YYYY-MM for bulk turnover-scan mode — the trailing 18 months up to and including this one are scanned (blank = today's month). Check download.companieshouse.gov.uk/en_accountsdata.html for the current filename pattern first."
         default: ""
         required: false
 
@@ -98,22 +98,24 @@ jobs:
         env:
           COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
 
-      - name: Run turnover scan (bulk mode, trailing 12 months)
+      - name: Run turnover scan (bulk mode, trailing 18 months)
         if: ${{ github.event.inputs.mode == 'bulk' }}
         run: |
           # A single month's Accounts Data Product only contains accounts
           # *filed* that month — since each company files once a year on its
           # own schedule, one month alone would only cover ~1/12 of
-          # companies. Loop back over the trailing 12 months (anchored on
+          # companies. Loop back over the trailing 18 months (anchored on
           # bulk_month, or today's month if blank) and --append each one so
-          # results.csv accumulates a full year's worth of filings.
+          # results.csv accumulates well over a full year's worth of filings
+          # (extra headroom over 12 catches companies that filed late or
+          # whose accounting reference date shifted).
           ANCHOR="${{ github.event.inputs.bulk_month }}"
           if [ -z "$ANCHOR" ]; then
             ANCHOR=$(date -u +'%Y-%m')
           fi
           ANCHOR_DATE="${ANCHOR}-01"
           APPEND_FLAG=""
-          for i in $(seq 0 11); do
+          for i in $(seq 0 17); do
             MONTH=$(date -u -d "$ANCHOR_DATE -$i month" +'%Y-%m')
             echo "=== Scanning month $MONTH ==="
             if python src/bulk_scan.py \
