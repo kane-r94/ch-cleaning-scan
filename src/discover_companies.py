@@ -58,7 +58,25 @@ FIELDNAMES = [
     "date_of_creation",
     "sic_codes",
     "address_snippet",
+    "accounts_category",
 ]
+
+# Accounts.AccountCategory values that mean "this company is legally allowed
+# to file without disclosing a P&L/turnover figure at all" — used downstream
+# by find_gap_companies.py to tell "genuinely has no turnover to find" apart
+# from "should have a turnover figure but our pipeline couldn't find one".
+EXEMPT_ACCOUNTS_CATEGORIES = {
+    "DORMANT",
+    "MICRO ENTITY",
+    "TOTAL EXEMPTION SMALL",
+    "TOTAL EXEMPTION FULL",
+    "AUDIT EXEMPTION SUBSIDIARY",
+    "UNAUDITED ABRIDGED",
+    "AUDITED ABRIDGED",
+    "NO ACCOUNTS FILED",
+    "ACCOUNTS TYPE NOT AVAILABLE",
+    "",
+}
 
 # Companies House publishes this dated by the 1st of the month; the actual
 # file is usually uploaded a few working days after month-end for the
@@ -96,6 +114,7 @@ def discover_via_api(args) -> int:
                 "date_of_creation": item.get("date_of_creation"),
                 "sic_codes": ";".join(item.get("sic_codes", []) or []),
                 "address_snippet": address_snippet,
+                "accounts_category": "",  # not available from Advanced Search results
             })
             count += 1
             if count % 200 == 0:
@@ -196,6 +215,7 @@ def discover_via_bulk(args) -> int:
                     "date_of_creation": _to_iso_date(row.get("IncorporationDate", "")),
                     "sic_codes": ";".join(sic_codes),
                     "address_snippet": address_snippet,
+                    "accounts_category": (row.get("Accounts.AccountCategory") or "").strip().upper(),
                 })
                 count += 1
                 if count % 200 == 0:

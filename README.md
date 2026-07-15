@@ -59,6 +59,22 @@ discovered sector — so it's cheap even though it needs
 bulk-mode turnover scan; run it manually with
 `python src/enrich_ownership.py` if you're working locally.
 
+**Stage 4 — Narrow down likely-missed companies (optional)**
+`src/find_gap_companies.py` diffs `data/companies.csv` against
+`output/results.csv` to find companies that match the SIC/status filter but
+never showed up in the turnover results — then splits that gap using each
+company's `accounts_category` (captured from the Free Company Data Product
+by `--mode bulk` discovery). Companies filed as dormant/micro-entity/exempt
+are excluded as a known, already-documented disclosure gap; everything left
+is written to `output/gap_companies.csv` as candidates worth a manual or
+agent-driven check against the actual filed document — this is exactly the
+class of case that caught THE FLOORBRITE GROUP LIMITED (see Known
+limitations below). The workflow runs this automatically and logs the
+counts; run it manually with `python src/find_gap_companies.py` if you're
+working locally. Only meaningful after bulk-mode discovery — API-mode
+discovery doesn't carry an `accounts_category`, so every unmatched row would
+show up as "gap" regardless of cause.
+
 Both stages write into `data/`, and the final filtered result — companies
 whose turnover falls in the target band — goes to `output/results.csv`.
 

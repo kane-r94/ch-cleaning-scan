@@ -136,6 +136,11 @@ jobs:
         env:
           COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
 
+      - name: Find gap companies (bulk mode)
+        if: ${{ github.event.inputs.discovery_mode == 'bulk' && github.event.inputs.mode == 'bulk' }}
+        run: |
+          python src/find_gap_companies.py
+
       - name: Export dashboard JSON
         run: |
           python src/export_dashboard_json.py \
