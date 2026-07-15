@@ -75,6 +75,30 @@ working locally. Only meaningful after bulk-mode discovery — API-mode
 discovery doesn't carry an `accounts_category`, so every unmatched row would
 show up as "gap" regardless of cause.
 
+**Stage 5 — Human review of gap companies (optional, local)**
+`src/fetch_gap_documents.py` reads `output/gap_companies.csv`, downloads each
+company's latest full-accounts filing as a human-readable PDF into
+`output/gap_documents/`, and writes `output/gap_review.csv` — a spreadsheet
+with the known company details already filled in and blank columns
+(`latest_turnover`, `turnover_year`, `employees`, `meets_band`, `notes`) for
+you to complete after reading each PDF. This is the manual counterpart to
+stages 1-4: instead of paying for an agent to read scanned documents, it
+just does the cheap mechanical part (fetching) and leaves the actual
+judgement call to a human.
+
+Once you've confirmed a company's turnover from its PDF, copy that row
+(with the blanks filled in) into **`manual_review/manual_additions.csv`** —
+a small, git-committed file, separate from the ephemeral `output/`
+artifacts, that persists across runs. `src/export_dashboard_json.py` reads
+it automatically on every export and folds in any row with a numeric
+`latest_turnover` that falls inside the current turnover band, labelling it
+`Manually verified` (rather than `Audited`) so it stays visually distinct
+on the dashboard. Rows already present in the auto-parsed results, or with
+turnover outside the band, or not yet filled in, are silently skipped — so
+it's safe to keep a partially-reviewed spreadsheet around and top it up
+over time. Remember to `git add`/commit `manual_review/manual_additions.csv`
+after adding confirmed rows, since nothing else writes to it automatically.
+
 Both stages write into `data/`, and the final filtered result — companies
 whose turnover falls in the target band — goes to `output/results.csv`.
 

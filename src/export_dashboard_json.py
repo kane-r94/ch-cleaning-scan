@@ -30,6 +30,59 @@ def to_number(value: str) -> float | None:
         return None
 
 
+RESULT_FIELDS = [
+    "company_name", "entity_type", "company_number", "hq_address",
+    "latest_turnover", "turnover_year", "employees", "ownership_type",
+    "sic_codes", "confidence", "source",
+]
+
+
+def load_manual_additions(path: str, min_turnover: float, max_turnover: float,
+                           already_matched: set) -> list[dict]:
+    """
+    Confirmed rows from manual_review/manual_additions.csv (human-verified
+    against the actual filed document — see src/fetch_gap_documents.py) get
+    folded into the dashboard alongside the auto-parsed results, labelled
+    "Manually verified" so they stay visually distinct. A row only counts
+    once it has a numeric latest_turnover inside the current band — a
+    half-filled-in working copy, or one left over from a previous, wider
+    band, is safely ignored rather than silently included.
+    """
+    if not os.path.exists(path):
+        return []
+
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        raw_rows = list(csv.DictReader(f))
+
+    by_company: dict[str, dict] = {}
+    for row in raw_rows:
+        number = (row.get("company_number") or "").strip()
+        if not number:
+            continue
+        turnover = to_number(row.get("latest_turnover", ""))
+        if turnover is None or not (min_turnover <= turnover <= max_turnover):
+            continue
+        if number in already_matched:
+            continue
+        by_company[number] = {
+            "company_name": row.get("company_name", ""),
+            "entity_type": row.get("entity_type", ""),
+            "company_number": number,
+            "hq_address": row.get("hq_address", ""),
+            "latest_turnover": f"{turnover:,.0f}",
+            "turnover_year": row.get("turnover_year", ""),
+            "employees": row.get("employees", ""),
+            "ownership_type": row.get("ownership_type", ""),
+            "sic_codes": row.get("sic_codes", ""),
+            "confidence": "Manually verified",
+            "source": (
+                f"Manually confirmed from filed accounts, Companies House "
+                f"company no. {number} (see manual_review/manual_additions.csv)"
+            ),
+        }
+    return list(by_company.values())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--in", dest="infile", default="output/results.csv")
@@ -37,13 +90,22 @@ def main() -> None:
     parser.add_argument("--min-turnover", type=float, default=5_000_000)
     parser.add_argument("--max-turnover", type=float, default=35_000_000)
     parser.add_argument("--mode", default="api", choices=["api", "bulk"])
+    parser.add_argument("--manual-additions", default="manual_review/manual_additions.csv",
+                         help="confirmed manual entries to fold in alongside the auto-parsed results")
     args = parser.parse_args()
 
     if not os.path.exists(args.infile):
         sys.exit(f"Input not found: {args.infile}")
 
-    with open(args.infile, newline="", encoding="utf-8") as f:
+    with open(args.infile, newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
+
+    already_matched = {r.get("company_number", "") for r in rows}
+    manual_rows = load_manual_additions(args.manual_additions, args.min_turnover,
+                                         args.max_turnover, already_matched)
+    if manual_rows:
+        print(f"Folding in {len(manual_rows)} confirmed manual addition(s) from {args.manual_additions}")
+        rows.extend(manual_rows)
 
     turnovers = [to_number(r.get("latest_turnover", "")) for r in rows]
     turnovers = [t for t in turnovers if t is not None]
