@@ -24,7 +24,7 @@ Usage:
         --min-turnover 10000000 --max-turnover 30000000
 
     # Scan a ZIP you already downloaded manually
-    python src/bulk_scan.py --zip-path ./Accounts_Bulk_Data-2026-06.zip \\
+    python src/bulk_scan.py --zip-path ./Accounts_Monthly_Data-June2026.zip \\
         --min-turnover 10000000 --max-turnover 30000000
 """
 
@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime
 import io
 import logging
 import os
@@ -54,14 +55,27 @@ OUTPUT_FIELDS = [
 
 # Companies House has used a couple of naming conventions over the years;
 # adjust here (or pass --url) if download.companieshouse.gov.uk's current
-# page shows something different.
+# page shows something different. Confirmed current pattern (verified
+# against a real download): Accounts_Monthly_Data-{MonthName}{Year}.zip,
+# e.g. Accounts_Monthly_Data-June2026.zip.
 DEFAULT_URL_TEMPLATE = (
-    "https://download.companieshouse.gov.uk/Accounts_Bulk_Data-{month}.zip"
+    "https://download.companieshouse.gov.uk/Accounts_Monthly_Data-{month_name}{year}.zip"
 )
 
-# Filenames inside the zip typically look like:
-#   02929543_20250531_ixbrl.html  or  02929543_20250531.html
-COMPANY_NUMBER_RE = re.compile(r"^(?P<number>[A-Z0-9]{6,8})_")
+# Filenames inside the zip carry a batch-code prefix before the actual
+# company number, e.g. Prod224_2606_00009604_20250930.html — the prefix
+# segments vary by batch, so match on the number+date immediately before
+# ".html" rather than assuming the filename starts with the company number.
+COMPANY_NUMBER_RE = re.compile(
+    r"^.*_(?P<number>[A-Z0-9]{6,8})_(?P<date>\d{8})\.html$", re.IGNORECASE
+)
+
+
+def _month_to_filename_parts(month: str) -> tuple[str, str]:
+    """Converts a 'YYYY-MM' CLI argument into the (MonthName, Year) pair
+    the download filename actually uses, e.g. ('2026-06') -> ('June', '2026')."""
+    dt = datetime.datetime.strptime(month, "%Y-%m")
+    return dt.strftime("%B"), dt.strftime("%Y")
 
 
 def load_companies_of_interest(path: str) -> dict[str, dict]:
@@ -110,7 +124,11 @@ def main() -> None:
         with open(args.zip_path, "rb") as f:
             zip_bytes = f.read()
     else:
-        url = args.url or DEFAULT_URL_TEMPLATE.format(month=args.month)
+        if args.url:
+            url = args.url
+        else:
+            month_name, year = _month_to_filename_parts(args.month)
+            url = DEFAULT_URL_TEMPLATE.format(month_name=month_name, year=year)
         zip_bytes = download_zip(url)
 
     os.makedirs(os.path.dirname(args.outfile) or ".", exist_ok=True)
