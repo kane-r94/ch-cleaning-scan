@@ -149,4 +149,23 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/results.json
           git diff --staged --quiet || git commit -m "Update dashboard data ($(date -u +'%Y-%m-%d %H:%M UTC'))"
-          git push
+          # This job can run for a long time (the bulk scan downloads up to
+          # 18 monthly archives), so main may well have moved on since
+          # actions/checkout ran at the start — rebase onto the latest
+          # remote main before pushing so an unrelated commit elsewhere
+          # doesn't reject this push.
+          success=0
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push; then
+              success=1
+              break
+            fi
+            echo "::warning::Push attempt $attempt failed (main moved again), retrying..."
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          if [ "$success" -ne 1 ]; then
+            echo "::error::Failed to push dashboard data after 3 attempts"
+            exit 1
+          fi
