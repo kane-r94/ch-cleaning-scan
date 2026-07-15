@@ -37,16 +37,18 @@ RESULT_FIELDS = [
 ]
 
 
-def load_manual_additions(path: str, min_turnover: float, max_turnover: float,
-                           already_matched: set) -> list[dict]:
+def load_manual_additions(path: str, already_matched: set) -> list[dict]:
     """
     Confirmed rows from manual_review/manual_additions.csv (human-verified
     against the actual filed document — see src/fetch_gap_documents.py) get
     folded into the dashboard alongside the auto-parsed results, labelled
-    "Manually verified" so they stay visually distinct. A row only counts
-    once it has a numeric latest_turnover inside the current band — a
-    half-filled-in working copy, or one left over from a previous, wider
-    band, is safely ignored rather than silently included.
+    "Manually verified" so they stay visually distinct. Unlike the
+    auto-parsed pipeline, these are NOT filtered to the turnover band —
+    a human already decided these are worth surfacing, so a manual entry
+    above/below the band still shows up (it's just excluded from the
+    band-scoped turnover_histogram below). A row only counts once it has a
+    numeric latest_turnover at all — a half-filled-in working copy is
+    safely ignored rather than silently included.
     """
     if not os.path.exists(path):
         return []
@@ -60,7 +62,7 @@ def load_manual_additions(path: str, min_turnover: float, max_turnover: float,
         if not number:
             continue
         turnover = to_number(row.get("latest_turnover", ""))
-        if turnover is None or not (min_turnover <= turnover <= max_turnover):
+        if turnover is None:
             continue
         if number in already_matched:
             continue
@@ -101,8 +103,7 @@ def main() -> None:
         rows = list(csv.DictReader(f))
 
     already_matched = {r.get("company_number", "") for r in rows}
-    manual_rows = load_manual_additions(args.manual_additions, args.min_turnover,
-                                         args.max_turnover, already_matched)
+    manual_rows = load_manual_additions(args.manual_additions, already_matched)
     if manual_rows:
         print(f"Folding in {len(manual_rows)} confirmed manual addition(s) from {args.manual_additions}")
         rows.extend(manual_rows)
