@@ -75,6 +75,9 @@ company_name, entity_type, company_number, hq_address, latest_turnover,
 turnover_year, employees, ownership_type, sic_codes, confidence, source
 ```
 
+See `output/example_results.csv` for a sample of what this looks like
+(illustrative data, not real companies).
+
 `confidence` will be `Audited` for anything successfully parsed from a filed
 account. `ownership_type` is a best-effort label derived from the PSC
 (persons with significant control) register — e.g. "Employee Ownership
@@ -92,7 +95,59 @@ parent" — and should be sanity-checked for anything unusual.
   accounts are often rounded to the nearest £1,000 or £'000s — check the
   `units` note the parser attaches to each figure).
 
+## Getting this onto GitHub
+
+**Option A — no command line, using the GitHub website (easiest)**
+
+1. Unzip the folder you downloaded, so you have a plain `ch-cleaning-scan`
+   folder on your computer.
+2. Go to https://github.com/new (log in first if needed).
+3. Give it a name (e.g. `ch-cleaning-scan`), leave it **Public** or
+   **Private** as you prefer, and click **Create repository** — don't tick
+   any of the "initialize with README" boxes.
+4. On the next page, click the link that says **"uploading an existing
+   file"**.
+5. Open your unzipped folder, select all the files and sub-folders
+   (`README.md`, `requirements.txt`, `src/`, `tests/`, etc. — everything
+   except the hidden `.git` folder, which the web uploader ignores anyway),
+   and drag them into the browser window.
+6. Scroll down, add a short commit message (e.g. "Initial upload"), and
+   click **Commit changes**.
+
+Done — the repo is live. (One thing this method skips: the git commit
+history I created locally. That doesn't affect anything functionally, it
+just means GitHub will show one upload rather than the original commit.)
+
+**Option B — command line (keeps the original commit history)**
+
+1. Unzip the folder, then open a terminal and move into it:
+   ```bash
+   unzip ch-cleaning-scan.zip
+   cd ch-cleaning-scan
+   ```
+2. Create an empty repository at https://github.com/new — same as step 3
+   above, same rule about not initializing it with a README.
+3. GitHub will show you a repo URL like
+   `https://github.com/<your-username>/ch-cleaning-scan.git`. Copy it, then
+   run:
+   ```bash
+   git remote add origin https://github.com/<your-username>/ch-cleaning-scan.git
+   git branch -M main
+   git push -u origin main
+   ```
+4. If it asks for a password, GitHub no longer accepts your account
+   password for this — you'll need a Personal Access Token instead
+   (GitHub → Settings → Developer settings → Personal access tokens →
+   generate one with "repo" scope, and paste that in when prompted for a
+   password), or set up GitHub Desktop/SSH keys if you'd rather avoid
+   tokens entirely.
+
+Either way, remember `.env` (your actual API key) is excluded by
+`.gitignore` and won't be uploaded — good, since that key shouldn't go on
+GitHub, private or public.
+
 ## Known limitations
+
 
 - Small and micro companies are legally allowed to file abbreviated/filleted
   accounts **without a P&L or turnover figure at all**. Those companies will

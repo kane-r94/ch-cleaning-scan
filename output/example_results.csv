@@ -1,0 +1,4 @@
+company_name,entity_type,company_number,hq_address,latest_turnover,turnover_year,employees,ownership_type,sic_codes,confidence,source
+Brightfield Cleaning Services Ltd,ltd,03214567,"12 Kelvin Road, Manchester, M1 4RT",24680000,2025-03-31,687,Employee Ownership Trust,81210;81290,Audited,"Companies House filed accounts, document 3q7f9k2xR1"
+Northgate Commercial Cleaning Ltd,ltd,05987321,"Unit 3 Enterprise Park, Leeds, LS10 1AB",18950000,2025-06-30,412,Sole individual owner,81210,Audited,"Companies House filed accounts, document 8mN4p1zQ7t"
+Coastal FM Solutions Ltd,ltd,07456213,"45 Harbour Way, Cardiff, CF10 2BH",11230000,2024-12-31,255,Corporate parent / group subsidiary,81220;81229,Audited,"Companies House filed accounts, document 2vL8w3sK9m"

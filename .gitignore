@@ -4,7 +4,8 @@ __pycache__/
 venv/
 .venv/
 data/
-output/
+output/*
+!output/example_results.csv
 *.zip
 *.log
 .DS_Store
