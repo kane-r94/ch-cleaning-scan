@@ -32,9 +32,9 @@ on:
         description: "Scan mode: api (per-company, slower, always current) or bulk (monthly archive, faster, needs correct month)"
         type: choice
         options:
-          - api
           - bulk
-        default: api
+          - api
+        default: bulk
       api_company_limit:
         description: "Safety cap on companies processed in API mode (blank = no cap; a full SIC-code sweep can be thousands of companies and take hours)"
         default: "500"
