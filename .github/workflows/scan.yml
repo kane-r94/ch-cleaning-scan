@@ -127,6 +127,13 @@ jobs:
             fi
           done
 
+      - name: Look up ownership for matched companies (bulk mode)
+        if: ${{ github.event.inputs.mode == 'bulk' }}
+        run: |
+          python src/enrich_ownership.py -v
+        env:
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+
       - name: Export dashboard JSON
         run: |
           python src/export_dashboard_json.py \

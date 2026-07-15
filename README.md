@@ -45,6 +45,19 @@ Two ways to do this, pick whichever suits your access:
   every iXBRL file inside it, matching against `data/companies.csv`. Much
   faster for scanning thousands of companies since it avoids one API call
   per company, but only covers whichever monthly archives you download.
+  Because it makes no API calls, it can't look up **Persons with
+  Significant Control** either, so `ownership_type` is left as a
+  placeholder for every row it produces.
+
+**Stage 3 — Fill in ownership for bulk-mode results (optional)**
+`src/enrich_ownership.py` looks up PSC data and sets a real
+`ownership_type` for every row still showing the bulk-mode placeholder.
+This only needs the API for the small, already turnover-filtered
+`output/results.csv` — typically a few dozen companies, not the whole
+discovered sector — so it's cheap even though it needs
+`COMPANIES_HOUSE_API_KEY`. The workflow runs this automatically after a
+bulk-mode turnover scan; run it manually with
+`python src/enrich_ownership.py` if you're working locally.
 
 Both stages write into `data/`, and the final filtered result — companies
 whose turnover falls in the target band — goes to `output/results.csv`.
@@ -84,6 +97,9 @@ python src/scan_turnover.py --min-turnover 10000000 --max-turnover 30000000
 
 # Stage 2b: bulk-driven turnover scan (good for a full sector sweep)
 python src/bulk_scan.py --month 2026-06 --min-turnover 10000000 --max-turnover 30000000
+
+# Stage 3 (only needed after bulk-driven turnover scans): fill in ownership
+python src/enrich_ownership.py
 ```
 
 Results land in `output/results.csv` with columns matching the table format:
