@@ -34,8 +34,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--in", dest="infile", default="output/results.csv")
     parser.add_argument("--out", dest="outfile", default="docs/results.json")
-    parser.add_argument("--min-turnover", type=float, default=10_000_000)
-    parser.add_argument("--max-turnover", type=float, default=30_000_000)
+    parser.add_argument("--min-turnover", type=float, default=5_000_000)
+    parser.add_argument("--max-turnover", type=float, default=35_000_000)
     parser.add_argument("--mode", default="api", choices=["api", "bulk"])
     args = parser.parse_args()
 

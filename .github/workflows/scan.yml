@@ -22,11 +22,11 @@ on:
         required: false
       min_turnover:
         description: "Minimum turnover (GBP)"
-        default: "10000000"
+        default: "5000000"
         required: false
       max_turnover:
         description: "Maximum turnover (GBP)"
-        default: "30000000"
+        default: "35000000"
         required: false
       mode:
         description: "Scan mode: api (per-company, slower, always current) or bulk (monthly archive, faster, needs correct month)"

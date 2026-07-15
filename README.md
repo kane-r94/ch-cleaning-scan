@@ -2,7 +2,7 @@
 
 Find UK companies in a given SIC code (default: cleaning services — 81210,
 81220, 81290) whose latest filed turnover falls inside a target band (default:
-£10m–£30m), using **only official Companies House data**.
+£5m–£35m), using **only official Companies House data**.
 
 Every turnover/employee figure this tool outputs is sourced from a company's
 actual filed accounts (iXBRL), so it can be labelled **Audited** — not
@@ -93,10 +93,10 @@ python src/discover_companies.py --mode bulk --sic 81210 81220 81290 --status ac
 python src/discover_companies.py --mode api --sic 81210 81220 81290 --status active
 
 # Stage 2a: API-driven turnover scan (good for a few hundred companies)
-python src/scan_turnover.py --min-turnover 10000000 --max-turnover 30000000
+python src/scan_turnover.py --min-turnover 5000000 --max-turnover 35000000
 
 # Stage 2b: bulk-driven turnover scan (good for a full sector sweep)
-python src/bulk_scan.py --month 2026-06 --min-turnover 10000000 --max-turnover 30000000
+python src/bulk_scan.py --month 2026-06 --min-turnover 5000000 --max-turnover 35000000
 
 # Stage 3 (only needed after bulk-driven turnover scans): fill in ownership
 python src/enrich_ownership.py

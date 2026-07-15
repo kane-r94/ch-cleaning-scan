@@ -104,8 +104,8 @@ def main() -> None:
     parser.add_argument("--zip-path", help="path to an already-downloaded zip file")
     parser.add_argument("--companies", dest="companies_csv", default="data/companies.csv")
     parser.add_argument("--out", dest="outfile", default="output/results.csv")
-    parser.add_argument("--min-turnover", type=float, default=10_000_000)
-    parser.add_argument("--max-turnover", type=float, default=30_000_000)
+    parser.add_argument("--min-turnover", type=float, default=5_000_000)
+    parser.add_argument("--max-turnover", type=float, default=35_000_000)
     parser.add_argument("--append", action="store_true",
                          help="merge into an existing results.csv instead of overwriting "
                               "(use this when scanning multiple months in turn) — matches "
