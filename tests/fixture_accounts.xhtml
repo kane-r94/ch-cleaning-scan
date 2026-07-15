@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"
+      xmlns:core="http://xbrl.frc.org.uk/fr/2021-01-01/core"
+      xmlns:xbrli="http://www.xbrl.org/2003/instance">
+<head><title>Test Accounts</title></head>
+<body>
+  <ix:header>
+    <ix:references>
+      <xbrli:context id="c1">
+        <xbrli:period><xbrli:startDate>2023-06-01</xbrli:startDate><xbrli:endDate>2024-05-31</xbrli:endDate></xbrli:period>
+      </xbrli:context>
+      <xbrli:context id="c0">
+        <xbrli:period><xbrli:startDate>2022-06-01</xbrli:startDate><xbrli:endDate>2023-05-31</xbrli:endDate></xbrli:period>
+      </xbrli:context>
+    </ix:references>
+  </ix:header>
+  <div>
+    <p>Turnover for the current year:
+      <ix:nonFraction name="core:Turnover" contextRef="c1" unitRef="GBP" decimals="0" scale="0" sign="">18450000</ix:nonFraction>
+    </p>
+    <p>Turnover for the prior year:
+      <ix:nonFraction name="core:Turnover" contextRef="c0" unitRef="GBP" decimals="0" scale="0" sign="">15920000</ix:nonFraction>
+    </p>
+    <p>Average number of employees, current year:
+      <ix:nonFraction name="core:AverageNumberEmployeesDuringPeriod" contextRef="c1" unitRef="pure" decimals="0" scale="0" sign="">412</ix:nonFraction>
+    </p>
+    <p>Average number of employees, prior year:
+      <ix:nonFraction name="core:AverageNumberEmployeesDuringPeriod" contextRef="c0" unitRef="pure" decimals="0" scale="0" sign="">389</ix:nonFraction>
+    </p>
+  </div>
+</body>
+</html>
