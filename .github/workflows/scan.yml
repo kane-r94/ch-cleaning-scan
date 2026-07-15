@@ -9,6 +9,17 @@ on:
         description: "SIC codes to scan (space-separated)"
         default: "81210 81220 81221 81222 81223 81229 81290"
         required: false
+      discovery_mode:
+        description: "Company discovery (stage 1): api (Advanced Search, fails past ~10k matches for a whole sector) or bulk (Free Company Data Product snapshot, no limit — recommended for sectors like cleaning)"
+        type: choice
+        options:
+          - bulk
+          - api
+        default: bulk
+      discovery_snapshot_date:
+        description: "YYYY-MM-DD snapshot date for bulk discovery (blank = guess today's month; check download.companieshouse.gov.uk/en_output.html for the current filename if the guess is wrong)"
+        default: ""
+        required: false
       min_turnover:
         description: "Minimum turnover (GBP)"
         default: "10000000"
@@ -50,9 +61,24 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Discover companies in scope
+      - name: Discover companies in scope (bulk mode)
+        if: ${{ github.event.inputs.discovery_mode == 'bulk' }}
+        run: |
+          SNAPSHOT_DATE="${{ github.event.inputs.discovery_snapshot_date }}"
+          if [ -z "$SNAPSHOT_DATE" ]; then
+            SNAPSHOT_DATE=$(date -u +'%Y-%m-01')
+          fi
+          python src/discover_companies.py \
+            --mode bulk \
+            --date "$SNAPSHOT_DATE" \
+            --sic ${{ github.event.inputs.sic_codes }} \
+            --status active -v
+
+      - name: Discover companies in scope (API mode)
+        if: ${{ github.event.inputs.discovery_mode == 'api' }}
         run: |
           python src/discover_companies.py \
+            --mode api \
             --sic ${{ github.event.inputs.sic_codes }} \
             --status active -v
         env:

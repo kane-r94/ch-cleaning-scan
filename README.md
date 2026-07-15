@@ -11,10 +11,23 @@ estimated, not scraped from a marketing site or a data vendor's model.
 ## How it works (two stages)
 
 **Stage 1 — Discover companies in scope**
-`src/discover_companies.py` calls the Companies House **Advanced Search API**
-to list every active company registered under the chosen SIC code(s). Output:
-`data/companies.csv` (company number, name, address, incorporation date,
-SIC codes).
+`src/discover_companies.py` lists every active company registered under the
+chosen SIC code(s). Output: `data/companies.csv` (company number, name,
+address, incorporation date, SIC codes). Two modes:
+
+- `--mode bulk` (**recommended, and the workflow default**): downloads
+  Companies House's free monthly **Free Company Data Product** snapshot (no
+  API key needed — see https://download.companieshouse.gov.uk/en_output.html)
+  and filters it locally. No pagination limit, so it reliably covers a whole
+  SIC sector.
+- `--mode api`: calls the **Advanced Search API** live. Always current, but
+  the API has a confirmed ~10,000-match pagination ceiling — `start_index`
+  only paginates within the first ~10k results of a query, not the true
+  total. Common cleaning-sector codes (e.g. 81210) return more than that
+  nationwide, so this mode **will fail partway through** for a full-sector
+  sweep (see
+  https://forum.companieshouse.gov.uk/t/advanced-search-companies-responds-with-500-after-10000-items/4813).
+  Only use it for narrow searches you know return under ~10k matches.
 
 **Stage 2 — Pull turnover from filed accounts**
 Two ways to do this, pick whichever suits your access:
@@ -58,8 +71,13 @@ whose turnover falls in the target band — goes to `output/results.csv`.
 ## Usage
 
 ```bash
-# Stage 1: discover companies in scope
-python src/discover_companies.py --sic 81210 81220 81290 --status active
+# Stage 1: discover companies in scope (bulk mode — recommended for a full sector sweep)
+python src/discover_companies.py --mode bulk --sic 81210 81220 81290 --status active \
+    --date 2026-07-01
+
+# Stage 1 (alternative): API-driven discovery — only safe for narrow searches
+# that return under ~10,000 matches
+python src/discover_companies.py --mode api --sic 81210 81220 81290 --status active
 
 # Stage 2a: API-driven turnover scan (good for a few hundred companies)
 python src/scan_turnover.py --min-turnover 10000000 --max-turnover 30000000
@@ -183,17 +201,26 @@ numbers, from the Actions tab.
 
 - Repo → **Actions** tab → **"Run cleaning-sector turnover scan"** →
   **Run workflow**
-- You'll be asked for: SIC codes, turnover band, and **mode**:
-  - `api` — per-company, always current, but slower. There's a
-    `api_company_limit` safety cap (default 500) so a first run doesn't
-    accidentally try to process every cleaning company in the UK in one
-    go and time out — raise it once you're happy with a small test run.
-  - `bulk` — uses Companies House's free monthly accounts archive
-    (no extra API calls beyond discovery). Faster for a full sweep, but
-    you need to give it a real `bulk_month` (e.g. `2026-06`) — check
-    https://download.companieshouse.gov.uk/en_accountsdata.html first to
-    confirm that month's file is published and that the filename pattern
-    still matches what's in `src/bulk_scan.py`.
+- You'll be asked for: SIC codes, **discovery_mode** (stage 1), turnover
+  band, and turnover-scan **mode** (stage 2):
+  - `discovery_mode: bulk` (default) — Free Company Data Product snapshot,
+    no per-company API calls, no match-count limit. Optionally set
+    `discovery_snapshot_date` (YYYY-MM-DD) if the auto-guessed "1st of this
+    month" doesn't match what's published at
+    https://download.companieshouse.gov.uk/en_output.html.
+  - `discovery_mode: api` — live Advanced Search. Only use for a narrow SIC
+    sweep you know returns under ~10,000 companies; a full cleaning-sector
+    sweep will fail partway through (see Stage 1 notes above).
+  - turnover-scan `mode: api` — per-company, always current, but slower.
+    There's an `api_company_limit` safety cap (default 500) so a first run
+    doesn't accidentally try to process every matched company in one go and
+    time out — raise it once you're happy with a small test run.
+  - turnover-scan `mode: bulk` — uses Companies House's free monthly
+    accounts archive (no extra API calls beyond discovery). Faster for a
+    full sweep, but you need to give it a real `bulk_month` (e.g. `2026-06`)
+    — check https://download.companieshouse.gov.uk/en_accountsdata.html
+    first to confirm that month's file is published and that the filename
+    pattern still matches what's in `src/bulk_scan.py`.
 - When it finishes, it commits `docs/results.json`, and the dashboard
   updates automatically — refresh the Pages URL.
 
@@ -208,12 +235,17 @@ numbers, from the Actions tab.
   that; use the `api_company_limit` input or switch to `bulk` mode for
   large sweeps.
 - If a run fails, check the Actions tab logs first — most likely causes are
-  a missing/incorrect secret, or (in bulk mode) a wrong month/URL.
+  a missing/incorrect secret, a wrong bulk month/snapshot date/URL, or (if
+  `discovery_mode` was set to `api` for a broad sector) the Advanced Search
+  10,000-match ceiling described above.
 
 ## Known limitations
 
-
-
+- The Companies House Advanced Search API (`--mode api` for stage 1) cannot
+  paginate past roughly 10,000 matches for a given query — this is a
+  confirmed platform limitation, not a bug in this tool. Use `--mode bulk`
+  for any SIC sweep likely to return more than that (the default cleaning
+  codes do, nationwide).
 - Small and micro companies are legally allowed to file abbreviated/filleted
   accounts **without a P&L or turnover figure at all**. Those companies will
   show up in `companies.csv` but with no turnover in the results — this is
