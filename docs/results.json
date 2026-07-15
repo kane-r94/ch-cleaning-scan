@@ -1,0 +1,71 @@
+{
+  "is_sample": true,
+  "generated_at": null,
+  "scan_mode": null,
+  "turnover_band": { "min": 10000000, "max": 30000000 },
+  "summary": {
+    "company_count": 3,
+    "average_turnover": 18286666.67,
+    "median_turnover": 18950000,
+    "total_employees": 1354
+  },
+  "ownership_breakdown": {
+    "Employee Ownership Trust": 1,
+    "Sole individual owner": 1,
+    "Corporate parent / group subsidiary": 1
+  },
+  "confidence_breakdown": {
+    "Audited": 3
+  },
+  "turnover_histogram": {
+    "£10.0m\u2013£12.5m": 1,
+    "£12.5m\u2013£15.0m": 0,
+    "£15.0m\u2013£17.5m": 0,
+    "£17.5m\u2013£20.0m": 1,
+    "£20.0m\u2013£22.5m": 0,
+    "£22.5m\u2013£25.0m": 1,
+    "£25.0m\u2013£27.5m": 0,
+    "£27.5m\u2013£30.0m": 0
+  },
+  "companies": [
+    {
+      "company_name": "Brightfield Cleaning Services Ltd",
+      "entity_type": "ltd",
+      "company_number": "03214567",
+      "hq_address": "12 Kelvin Road, Manchester, M1 4RT",
+      "latest_turnover": "24680000",
+      "turnover_year": "2025-03-31",
+      "employees": "687",
+      "ownership_type": "Employee Ownership Trust",
+      "sic_codes": "81210;81290",
+      "confidence": "Audited",
+      "source": "Companies House filed accounts, document 3q7f9k2xR1"
+    },
+    {
+      "company_name": "Northgate Commercial Cleaning Ltd",
+      "entity_type": "ltd",
+      "company_number": "05987321",
+      "hq_address": "Unit 3 Enterprise Park, Leeds, LS10 1AB",
+      "latest_turnover": "18950000",
+      "turnover_year": "2025-06-30",
+      "employees": "412",
+      "ownership_type": "Sole individual owner",
+      "sic_codes": "81210",
+      "confidence": "Audited",
+      "source": "Companies House filed accounts, document 8mN4p1zQ7t"
+    },
+    {
+      "company_name": "Coastal FM Solutions Ltd",
+      "entity_type": "ltd",
+      "company_number": "07456213",
+      "hq_address": "45 Harbour Way, Cardiff, CF10 2BH",
+      "latest_turnover": "11230000",
+      "turnover_year": "2024-12-31",
+      "employees": "255",
+      "ownership_type": "Corporate parent / group subsidiary",
+      "sic_codes": "81220;81229",
+      "confidence": "Audited",
+      "source": "Companies House filed accounts, document 2vL8w3sK9m"
+    }
+  ]
+}

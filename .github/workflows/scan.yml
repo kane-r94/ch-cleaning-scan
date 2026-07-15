@@ -1,0 +1,96 @@
+name: Run cleaning-sector turnover scan
+
+# Manual trigger only — nothing runs on a schedule. Go to the Actions tab
+# on GitHub, select this workflow, and click "Run workflow" to fire it.
+on:
+  workflow_dispatch:
+    inputs:
+      sic_codes:
+        description: "SIC codes to scan (space-separated)"
+        default: "81210 81220 81221 81222 81223 81229 81290"
+        required: false
+      min_turnover:
+        description: "Minimum turnover (GBP)"
+        default: "10000000"
+        required: false
+      max_turnover:
+        description: "Maximum turnover (GBP)"
+        default: "30000000"
+        required: false
+      mode:
+        description: "Scan mode: api (per-company, slower, always current) or bulk (monthly archive, faster, needs correct month)"
+        type: choice
+        options:
+          - api
+          - bulk
+        default: api
+      api_company_limit:
+        description: "Safety cap on companies processed in API mode (blank = no cap; a full SIC-code sweep can be thousands of companies and take hours)"
+        default: "500"
+        required: false
+      bulk_month:
+        description: "YYYY-MM to fetch for bulk mode (check download.companieshouse.gov.uk/en_accountsdata.html for the current filename pattern first)"
+        default: ""
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Discover companies in scope
+        run: |
+          python src/discover_companies.py \
+            --sic ${{ github.event.inputs.sic_codes }} \
+            --status active -v
+        env:
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+
+      - name: Run turnover scan (API mode)
+        if: ${{ github.event.inputs.mode == 'api' }}
+        run: |
+          LIMIT_ARG=""
+          if [ -n "${{ github.event.inputs.api_company_limit }}" ]; then
+            LIMIT_ARG="--limit ${{ github.event.inputs.api_company_limit }}"
+          fi
+          python src/scan_turnover.py \
+            --min-turnover ${{ github.event.inputs.min_turnover }} \
+            --max-turnover ${{ github.event.inputs.max_turnover }} \
+            $LIMIT_ARG -v
+        env:
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+
+      - name: Run turnover scan (bulk mode)
+        if: ${{ github.event.inputs.mode == 'bulk' }}
+        run: |
+          python src/bulk_scan.py \
+            --month "${{ github.event.inputs.bulk_month }}" \
+            --min-turnover ${{ github.event.inputs.min_turnover }} \
+            --max-turnover ${{ github.event.inputs.max_turnover }} -v
+
+      - name: Export dashboard JSON
+        run: |
+          python src/export_dashboard_json.py \
+            --min-turnover ${{ github.event.inputs.min_turnover }} \
+            --max-turnover ${{ github.event.inputs.max_turnover }} \
+            --mode ${{ github.event.inputs.mode }}
+
+      - name: Commit updated dashboard data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/results.json
+          git diff --staged --quiet || git commit -m "Update dashboard data ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+          git push

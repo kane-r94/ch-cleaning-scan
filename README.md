@@ -146,7 +146,72 @@ Either way, remember `.env` (your actual API key) is excluded by
 `.gitignore` and won't be uploaded — good, since that key shouldn't go on
 GitHub, private or public.
 
+## Running this as a hosted dashboard instead of on your machine
+
+The repo also includes a GitHub Actions workflow and a static dashboard, so
+the whole thing can run in GitHub's cloud rather than on your computer.
+
+**How it works:** a manually-triggered Action (`.github/workflows/scan.yml`)
+runs the discovery + turnover scan, converts the results to
+`docs/results.json`, and commits that file back to the repo. GitHub Pages
+serves `docs/index.html`, which reads that JSON and renders the register:
+summary stats, a turnover-distribution chart, an ownership-type breakdown,
+and a sortable/filterable table.
+
+Nothing runs on a schedule — you trigger it by hand whenever you want fresh
+numbers, from the Actions tab.
+
+### One-time setup
+
+1. **Add your API key as a secret** (this replaces the `.env` file you'd
+   use locally — never commit the key itself):
+   - Repo → **Settings → Secrets and variables → Actions → New repository
+     secret**
+   - Name: `COMPANIES_HOUSE_API_KEY`
+   - Value: your key from developer.companieshouse.gov.uk
+
+2. **Turn on GitHub Pages:**
+   - Repo → **Settings → Pages**
+   - Under "Build and deployment", set **Source: Deploy from a branch**
+   - Branch: `main`, folder: **`/docs`**
+   - Save. GitHub will give you a URL like
+     `https://<you>.github.io/ch-cleaning-scan/` — that's your dashboard,
+     live immediately (showing placeholder sample data until you run the
+     scan at least once).
+
+### Running a scan
+
+- Repo → **Actions** tab → **"Run cleaning-sector turnover scan"** →
+  **Run workflow**
+- You'll be asked for: SIC codes, turnover band, and **mode**:
+  - `api` — per-company, always current, but slower. There's a
+    `api_company_limit` safety cap (default 500) so a first run doesn't
+    accidentally try to process every cleaning company in the UK in one
+    go and time out — raise it once you're happy with a small test run.
+  - `bulk` — uses Companies House's free monthly accounts archive
+    (no extra API calls beyond discovery). Faster for a full sweep, but
+    you need to give it a real `bulk_month` (e.g. `2026-06`) — check
+    https://download.companieshouse.gov.uk/en_accountsdata.html first to
+    confirm that month's file is published and that the filename pattern
+    still matches what's in `src/bulk_scan.py`.
+- When it finishes, it commits `docs/results.json`, and the dashboard
+  updates automatically — refresh the Pages URL.
+
+### Notes
+
+- Because Pages is serving from a **public** repo, the dashboard (and the
+  underlying `results.json`/`results.csv`) is publicly visible at that URL.
+  That's fine here since everything in it is already public Companies
+  House data — just worth knowing before you point this at anything else.
+- The Action has `timeout-minutes: 300` (5 hours) as a hard ceiling — a
+  full-sector `api` mode sweep of thousands of companies could still hit
+  that; use the `api_company_limit` input or switch to `bulk` mode for
+  large sweeps.
+- If a run fails, check the Actions tab logs first — most likely causes are
+  a missing/incorrect secret, or (in bulk mode) a wrong month/URL.
+
 ## Known limitations
+
 
 
 - Small and micro companies are legally allowed to file abbreviated/filleted

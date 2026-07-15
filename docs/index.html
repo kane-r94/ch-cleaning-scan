@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UK Cleaning Sector Register — Turnover Scan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#EFEDE6;
+    --paper-raised:#F8F6F0;
+    --ink:#1C2531;
+    --ink-soft:#4A5262;
+    --teal:#2E6F63;
+    --teal-tint:#DCE9E6;
+    --rust:#A6512E;
+    --rust-tint:#F1E1D6;
+    --hairline:#CBBFA5;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Fraunces', serif;
+    --sans: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px 80px;}
+
+  /* ---------- Header: filing cover-sheet ---------- */
+  header.cover{
+    border-bottom:2px solid var(--ink);
+    padding:40px 0 28px;
+    margin-bottom:36px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background:var(--teal);
+    display:inline-block;
+    border-radius:1px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:clamp(32px,5vw,52px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:16px;
+    color:var(--ink-soft);
+    max-width:640px;
+    margin:0 0 18px;
+  }
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .meta-row span b{color:var(--ink);font-weight:500;}
+
+  .sample-banner{
+    background:var(--rust-tint);
+    border:1px solid var(--rust);
+    color:#5c2c17;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:10px 16px;
+    border-radius:2px;
+    margin-top:16px;
+    display:none;
+  }
+
+  /* ---------- Stat strip ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--hairline);
+    border:1px solid var(--hairline);
+    margin-bottom:40px;
+  }
+  .stat{
+    background:var(--paper-raised);
+    padding:20px 22px;
+  }
+  .stat .label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .stat .value{
+    font-family:var(--serif);
+    font-size:28px;
+    font-weight:600;
+  }
+
+  /* ---------- Charts ---------- */
+  .charts{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:28px;
+    margin-bottom:48px;
+  }
+  .panel{
+    background:var(--paper-raised);
+    border:1px solid var(--hairline);
+    padding:22px 24px 18px;
+  }
+  .panel h2{
+    font-family:var(--serif);
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 16px;
+  }
+  .panel-canvas-wrap{position:relative;height:260px;}
+
+  @media (max-width: 860px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .charts{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Table ---------- */
+  .table-section h2{
+    font-family:var(--serif);
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .table-section .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+  }
+  .controls{
+    display:flex;
+    gap:12px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .controls input[type="search"]{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:9px 12px;
+    border:1px solid var(--hairline);
+    background:var(--paper-raised);
+    color:var(--ink);
+    flex:1;
+    min-width:220px;
+  }
+  .controls input[type="search"]:focus{outline:2px solid var(--teal);outline-offset:1px;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--paper-raised);
+    font-size:13.5px;
+  }
+  thead th{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    text-align:left;
+    color:var(--ink-soft);
+    border-bottom:2px solid var(--ink);
+    padding:10px 12px;
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+  }
+  thead th:hover{color:var(--ink);}
+  thead th .arrow{opacity:.4;margin-left:4px;}
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--hairline);
+    vertical-align:top;
+  }
+  tbody tr:hover{background:var(--teal-tint);}
+  td.num, th.num{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  td.company-name{font-weight:500;max-width:220px;}
+  .badge{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:2px;
+  }
+  .badge.audited{background:var(--teal-tint);color:var(--teal);border:1px solid var(--teal);}
+  .badge.other{background:var(--rust-tint);color:var(--rust);border:1px solid var(--rust);}
+  .source-link{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);text-decoration:none;}
+
+  footer{
+    margin-top:48px;
+    padding-top:20px;
+    border-top:1px solid var(--hairline);
+    font-size:12.5px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  footer a{color:var(--teal);}
+  .empty-state{
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-family:var(--mono);
+    font-size:13px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="cover">
+    <div class="eyebrow">Form CH-SCAN · Companies House sourced</div>
+    <h1>UK Cleaning Sector Register</h1>
+    <p class="subtitle">Companies engaged in general and specialist cleaning activities (SIC 81210/81220/81290 and related codes), filtered to a target turnover band, sourced directly from filed accounts.</p>
+    <div class="meta-row">
+      <span>Last run: <b id="meta-generated">—</b></span>
+      <span>Mode: <b id="meta-mode">—</b></span>
+      <span>Turnover band: <b id="meta-band">—</b></span>
+      <span>Companies matched: <b id="meta-count">—</b></span>
+    </div>
+    <div class="sample-banner" id="sample-banner">
+      Showing placeholder sample data — this page updates automatically once the "Run cleaning-sector turnover scan" Action has been triggered at least once. Numbers below are illustrative, not real companies.
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="label">Companies in band</div><div class="value" id="stat-count">—</div></div>
+    <div class="stat"><div class="label">Average turnover</div><div class="value" id="stat-avg">—</div></div>
+    <div class="stat"><div class="label">Median turnover</div><div class="value" id="stat-median">—</div></div>
+    <div class="stat"><div class="label">Total employees</div><div class="value" id="stat-employees">—</div></div>
+  </section>
+
+  <section class="charts">
+    <div class="panel">
+      <h2>Turnover distribution</h2>
+      <div class="panel-canvas-wrap"><canvas id="chart-histogram"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Ownership type</h2>
+      <div class="panel-canvas-wrap"><canvas id="chart-ownership"></canvas></div>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <h2>Register entries</h2>
+    <p class="hint">Every row traces to a filed Companies House document — click a source reference to see what it cites. Click a column heading to sort.</p>
+    <div class="controls">
+      <input type="search" id="search" placeholder="Filter by name, HQ, ownership type…" />
+    </div>
+    <div id="table-wrap"></div>
+  </section>
+
+  <footer>
+    <span>Data: Companies House (Crown copyright, open licence) · Not verified by, or affiliated with, Companies House.</span>
+    <span><span class="badge audited" style="margin-right:6px;">Audited</span>figure read directly from a filed account — anything else is flagged accordingly.</span>
+  </footer>
+
+</div>
+
+<script>
+const COLUMNS = [
+  { key: "company_name", label: "Company", type: "text" },
+  { key: "company_number", label: "No.", type: "text" },
+  { key: "hq_address", label: "HQ", type: "text" },
+  { key: "latest_turnover", label: "Turnover", type: "num" },
+  { key: "turnover_year", label: "Period end", type: "text" },
+  { key: "employees", label: "Employees", type: "num" },
+  { key: "ownership_type", label: "Ownership", type: "text" },
+  { key: "confidence", label: "Confidence", type: "text" },
+];
+
+let sortState = { key: "latest_turnover", dir: "desc" };
+let allRows = [];
+
+function gbp(n) {
+  if (n === null || n === undefined || n === "") return "—";
+  const num = typeof n === "string" ? parseFloat(n.replace(/,/g, "")) : n;
+  if (isNaN(num)) return "—";
+  return "£" + num.toLocaleString("en-GB", { maximumFractionDigits: 0 });
+}
+
+function shortGbp(n) {
+  if (n === null || n === undefined) return "—";
+  return "£" + (n / 1_000_000).toFixed(1) + "m";
+}
+
+function renderMeta(data) {
+  document.getElementById("meta-generated").textContent =
+    data.generated_at ? new Date(data.generated_at).toLocaleString("en-GB") : "not yet run";
+  document.getElementById("meta-mode").textContent = data.scan_mode || "—";
+  document.getElementById("meta-band").textContent =
+    shortGbp(data.turnover_band.min) + " – " + shortGbp(data.turnover_band.max);
+  document.getElementById("meta-count").textContent = data.summary.company_count;
+
+  if (data.is_sample) {
+    document.getElementById("sample-banner").style.display = "block";
+  }
+}
+
+function renderStats(data) {
+  document.getElementById("stat-count").textContent = data.summary.company_count;
+  document.getElementById("stat-avg").textContent = shortGbp(data.summary.average_turnover);
+  document.getElementById("stat-median").textContent = shortGbp(data.summary.median_turnover);
+  document.getElementById("stat-employees").textContent =
+    data.summary.total_employees ? data.summary.total_employees.toLocaleString("en-GB") : "—";
+}
+
+function renderCharts(data) {
+  const histLabels = Object.keys(data.turnover_histogram || {});
+  const histValues = Object.values(data.turnover_histogram || {});
+  new Chart(document.getElementById("chart-histogram"), {
+    type: "bar",
+    data: {
+      labels: histLabels,
+      datasets: [{ data: histValues, backgroundColor: "#2E6F63", borderRadius: 2 }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { family: "IBM Plex Mono", size: 10 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0, font: { family: "IBM Plex Mono", size: 10 } }, grid: { color: "#CBBFA5" } },
+      },
+    },
+  });
+
+  const ownLabels = Object.keys(data.ownership_breakdown || {});
+  const ownValues = Object.values(data.ownership_breakdown || {});
+  new Chart(document.getElementById("chart-ownership"), {
+    type: "bar",
+    data: {
+      labels: ownLabels,
+      datasets: [{ data: ownValues, backgroundColor: "#A6512E", borderRadius: 2 }],
+    },
+    options: {
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0, font: { family: "IBM Plex Mono", size: 10 } }, grid: { color: "#CBBFA5" } },
+        y: { ticks: { font: { family: "Inter", size: 11 } }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+function renderTable() {
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  let rows = allRows.filter((r) =>
+    !query ||
+    Object.values(r).some((v) => String(v).toLowerCase().includes(query))
+  );
+
+  rows.sort((a, b) => {
+    const col = COLUMNS.find((c) => c.key === sortState.key);
+    let av = a[sortState.key], bv = b[sortState.key];
+    if (col.type === "num") {
+      av = parseFloat(String(av).replace(/,/g, "")) || 0;
+      bv = parseFloat(String(bv).replace(/,/g, "")) || 0;
+    } else {
+      av = String(av || "").toLowerCase();
+      bv = String(bv || "").toLowerCase();
+    }
+    if (av < bv) return sortState.dir === "asc" ? -1 : 1;
+    if (av > bv) return sortState.dir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const wrap = document.getElementById("table-wrap");
+  if (rows.length === 0) {
+    wrap.innerHTML = '<div class="empty-state">No entries match that filter.</div>';
+    return;
+  }
+
+  let html = "<table><thead><tr>";
+  for (const col of COLUMNS) {
+    const arrow = sortState.key === col.key ? (sortState.dir === "asc" ? "↑" : "↓") : "";
+    html += `<th class="${col.type === "num" ? "num" : ""}" data-key="${col.key}">${col.label}<span class="arrow">${arrow}</span></th>`;
+  }
+  html += "</tr></thead><tbody>";
+
+  for (const r of rows) {
+    const confBadge = r.confidence === "Audited"
+      ? `<span class="badge audited">Audited</span>`
+      : `<span class="badge other">${r.confidence || "—"}</span>`;
+    html += "<tr>";
+    html += `<td class="company-name">${r.company_name || ""}</td>`;
+    html += `<td>${r.company_number || ""}</td>`;
+    html += `<td>${r.hq_address || ""}</td>`;
+    html += `<td class="num">${gbp(r.latest_turnover)}</td>`;
+    html += `<td>${r.turnover_year || ""}</td>`;
+    html += `<td class="num">${r.employees ? Number(String(r.employees).replace(/,/g,"")).toLocaleString("en-GB") : "—"}</td>`;
+    html += `<td>${r.ownership_type || ""}</td>`;
+    html += `<td>${confBadge}</td>`;
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+}
+
+function attachHandlers() {
+  document.getElementById("search").addEventListener("input", renderTable);
+  document.getElementById("table-wrap").addEventListener("click", (e) => {
+    const th = e.target.closest("th");
+    if (!th) return;
+    const key = th.dataset.key;
+    if (sortState.key === key) {
+      sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+    } else {
+      sortState = { key, dir: "desc" };
+    }
+    renderTable();
+  });
+}
+
+fetch("results.json?_=" + Date.now())
+  .then((r) => r.json())
+  .then((data) => {
+    allRows = data.companies || [];
+    renderMeta(data);
+    renderStats(data);
+    renderCharts(data);
+    attachHandlers();
+    renderTable();
+  })
+  .catch((err) => {
+    document.getElementById("table-wrap").innerHTML =
+      '<div class="empty-state">Could not load results.json — ' + err + "</div>";
+  });
+</script>
+</body>
+</html>
