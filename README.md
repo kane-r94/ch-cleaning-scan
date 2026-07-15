@@ -261,6 +261,11 @@ numbers, from the Actions tab.
   show up in `companies.csv` but with no turnover in the results — this is
   not a bug, it's a disclosure exemption. Expect a real gap in coverage for
   the smaller end of any SIC code.
+- `bulk_scan.py` skips a small fraction (~0.08% in a real monthly archive)
+  of entries filed as `.zip`-wrapped alternate formats (UKSEF joint filings,
+  CIC accounts) rather than plain iXBRL `.html` — `src/ixbrl_parser.py`
+  doesn't unpack or parse those, so they're silently excluded rather than
+  mis-parsed.
 - iXBRL tagging isn't perfectly standardised across accounting software and
   taxonomy versions (old UK GAAP vs FRS 101 vs FRS 102 vs full IFRS). The
   parser matches on several known tag name variants (see
